@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Queima Semanal</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 50%;
+      margin: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    // Função para calcular a soma dos últimos 7 valores de prev_diff
+    function calcularTotalQueimado(semana, dados) {
+      let soma = 0;
+
+      for (let i = semana * 7; i < (semana + 1) * 7; i++) {
+        if (dados[i] && dados[i].prev_diff !== null) {
+          soma += dados[i].prev_diff;
+        }
+      }
+
+      return soma;
+    }
+
+    // Função para formatar o número com um ponto antes dos 9 últimos dígitos
+    function formatarNumero(numero) {
+      const stringNumero = numero.toString();
+      const parteInteira = stringNumero.slice(0, -9);
+      const parteDecimal = stringNumero.slice(-9);
+      return `${parteInteira}.${parteDecimal}`;
+    }
+
+    // Função para abreviar o valor em bi (bilhões)
+    function abreviarParaBi(valor) {
+      const valorBi = valor / 1e9;
+      return valorBi.toFixed(2) + "bi";
+    }
+
+    // Função para preencher a tabela com os dados do JSON
+    function preencherTabela(dados, ano) {
+      const tabela = document.createElement('table');
+      tabela.id = `queimaTable${ano}`;
+
+      const thead = tabela.createTHead();
+      const tbody = document.createElement('tbody');
+      tabela.appendChild(tbody);
+
+      document.body.appendChild(document.createElement('br'));
+      document.body.appendChild(document.createElement('br'));
+      document.body.appendChild(document.createElement('h2')).textContent = `Queima Semanal - ${ano}`;
+      document.body.appendChild(tabela);
+
+      const headerRow = thead.insertRow(0);
+      const semanaHeader = headerRow.insertCell(0);
+      semanaHeader.textContent = 'Semana';
+
+      const totalQueimadoHeader = headerRow.insertCell(1);
+      totalQueimadoHeader.textContent = 'Total Queimado';
+
+      const totalQueimadoAbrevHeader = headerRow.insertCell(2);
+      totalQueimadoAbrevHeader.textContent = 'Total Queimado (Abreviado)';
+
+      for (let semana = Math.floor(dados.length / 7) - 1; semana >= 0; semana--) {
+        const totalQueimado = calcularTotalQueimado(semana, dados);
+        const numeroFormatado = formatarNumero(totalQueimado);
+        const abreviacao = abreviarParaBi(totalQueimado);
+
+        const newRow = tbody.insertRow(0);
+        const semanaCell = newRow.insertCell(0);
+        const totalQueimadoCell = newRow.insertCell(1);
+        const totalQueimadoAbrevCell = newRow.insertCell(2);
+
+        semanaCell.textContent = `Semana ${semana + 1}`;
+        totalQueimadoCell.textContent = numeroFormatado;
+        totalQueimadoAbrevCell.textContent = abreviacao;
+      }
+    }
+
+    // URL do JSON
+    const jsonURL = 'https://tecnocao.github.io/reau-blackhole/blackhole.json';
+    
+    // Função para abreviar o valor em bi (bilhões)
+function abreviarParaBi(valor) {
+  const valorBi = valor / 1e18;
+  return valorBi.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "bi";
+}
+
+
+    // Requisição AJAX para obter o JSON
+    const xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        const dados = JSON.parse(xhr.responseText).results;
+
+        // Organizar os dados por ano
+        const dadosPorAno = {};
+        dados.forEach(dado => {
+          const ano = new Date(dado.time * 1000).getFullYear();
+          if (!dadosPorAno[ano]) {
+            dadosPorAno[ano] = [];
+          }
+          dadosPorAno[ano].push(dado);
+        });
+
+        // Ordenar os anos em ordem decrescente
+        const anosOrdenados = Object.keys(dadosPorAno).sort((a, b) => b - a);
+
+        // Preencher as tabelas para cada ano
+        anosOrdenados.forEach(ano => {
+          preencherTabela(dadosPorAno[ano], ano);
+        });
+      }
+    };
+    xhr.open('GET', jsonURL, true);
+    xhr.send();
+  </script>
+</body>
+</html>
